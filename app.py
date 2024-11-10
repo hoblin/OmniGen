@@ -6,6 +6,7 @@ import random
 import spaces
 from datetime import datetime
 from OmniGen import OmniGenPipeline
+from PIL import ImageDraw, ImageFont
 import numpy as np
 
 pipe = OmniGenPipeline.from_pretrained(
@@ -41,19 +42,16 @@ def generate_image(text, img1, img2, img3, height, width, guidance_scale, img_gu
         max_input_image_size=max_input_image_size,
     )
     img = output[0]
+    saved_path = None
 
     if save_images:
-        # Save All Generated Images
-        from datetime import datetime
-        # Create outputs directory if it doesn't exist
         os.makedirs('outputs', exist_ok=True)
-        # Generate unique filename with timestamp
         timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
         output_path = os.path.join('outputs', f'{timestamp}.png')
-        # Save the image
         img.save(output_path)
+        saved_path = output_path
 
-    return img
+    return img, saved_path
 
 
 def create_image_grid(images, values, param_name):
@@ -61,6 +59,18 @@ def create_image_grid(images, values, param_name):
     border_size = 1
     spacing = 5
     caption_height = 60  # Increased for larger font
+
+    # Setup font
+    font_path = os.path.join(os.path.dirname(__file__), 'fonts', 'SauceCodeProNerdFontPropo-Regular.ttf')
+    if not os.path.exists(font_path):
+        print(f"Warning: Font not found at {font_path}, falling back to default")
+        font = ImageFont.load_default()
+    else:
+        try:
+            font = ImageFont.truetype(font_path, 40)
+        except Exception as e:
+            print(f"Error loading font: {e}, falling back to default")
+            font = ImageFont.load_default()
 
     # Calculate total dimensions including spacing and borders
     width = sum(img.size[0] + 2*border_size for img in images) + spacing * (len(images) - 1)
@@ -83,12 +93,7 @@ def create_image_grid(images, values, param_name):
         grid.paste(bordered_bg, (x_offset, 0))
 
         # Add text caption
-        from PIL import ImageDraw, ImageFont
         draw = ImageDraw.Draw(grid)
-        try:
-            font = ImageFont.truetype("arial.ttf", 40)
-        except:
-            font = ImageFont.load_default()
 
         # Draw parameter value centered under each image in white
         text = f"{param_name}={value}"
@@ -161,13 +166,16 @@ def generate_image_grid(text, img1, img2, img3, height, width, guidance_scale, i
             img.save(output_path)
 
     grid = create_image_grid(images, values, param_to_iterate)
+    saved_path = None
 
     if save_images:
+        os.makedirs('outputs', exist_ok=True)
         timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
-        grid_path = os.path.join('outputs', f'{timestamp}_grid_{param_to_iterate}.png')
-        grid.save(grid_path)
+        output_path = os.path.join('outputs', f'{timestamp}_grid.png')
+        grid.save(output_path)
+        saved_path = output_path
 
-    return grid
+    return grid, saved_path
 
 # Gradio
 with gr.Blocks() as demo:
@@ -228,22 +236,31 @@ with gr.Blocks() as demo:
         with gr.Column():
             # generate
             generate_button = gr.Button("Generate Image")
-
+            # Add parameter iteration controls
+            with gr.Group():
+                gr.Markdown("Parameter Iteration (optional)")
+                with gr.Row():
+                    param_to_iterate = gr.Dropdown(
+                        choices=[("Select parameter to iterate", None),
+                                ('Seed', 'seed'),
+                                ('Prompt Part', 'prompt_part'),
+                                ('Steps', 'inference_steps'),
+                                ('Guidance Scale', 'guidance_scale'),
+                                ('Image Guidance Scale', 'img_guidance_scale')],
+                        value=None,
+                        scale=1
+                    )
+                    param_values = gr.Textbox(
+                        placeholder="Parameter values (comma-separated, e.g., 20,40,60)",
+                        value="",
+                        scale=2
+                    )
             with gr.Column():
                 # output image
-                output_image = gr.Image(label="Output Image")
                 save_images = gr.Checkbox(label="Save generated images", value=True)
-            # Add parameter iteration controls
-            param_to_iterate = gr.Dropdown(
-                choices=['inference_steps', 'guidance_scale', 'img_guidance_scale', 'seed', 'prompt_part'],
-                label="Parameter to iterate (optional)",
-                value=None
-            )
-            param_values = gr.Textbox(
-                label="Parameter values (comma-separated)",
-                placeholder="e.g., 20,40,60 for steps",
-                value=""
-            )
+                output_image = gr.Image(label="Output Image")
+                download_link = gr.File(label="Download Generated Image")
+
 
     # click
     generate_button.click(
@@ -268,7 +285,7 @@ with gr.Blocks() as demo:
             param_to_iterate,  # New input
             param_values,      # New input
         ],
-        outputs=output_image,
+        outputs=[output_image, download_link],
     )
 
 if __name__ == "__main__":
