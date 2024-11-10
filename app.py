@@ -67,7 +67,7 @@ def create_image_grid(images, values, param_name):
         font = ImageFont.load_default()
     else:
         try:
-            font = ImageFont.truetype(font_path, 40)
+            font = ImageFont.truetype(font_path, 20)
         except Exception as e:
             print(f"Error loading font: {e}, falling back to default")
             font = ImageFont.load_default()
@@ -96,7 +96,7 @@ def create_image_grid(images, values, param_name):
         draw = ImageDraw.Draw(grid)
 
         # Draw parameter value centered under each image in white
-        text = f"{param_name}={value}"
+        text = f"{param_name}: {value}"
         text_bbox = draw.textbbox((0, 0), text, font=font)
         text_width = text_bbox[2] - text_bbox[0]
         text_x = x_offset + (bordered_size[0] - text_width) // 2
