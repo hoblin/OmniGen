@@ -4,9 +4,9 @@ import os
 import argparse
 import random
 import spaces
-
-
+from datetime import datetime
 from OmniGen import OmniGenPipeline
+import numpy as np
 
 pipe = OmniGenPipeline.from_pretrained(
     "Shitao/OmniGen-v1"
@@ -20,7 +20,7 @@ def generate_image(text, img1, img2, img3, height, width, guidance_scale, img_gu
     input_images = [img for img in input_images if img is not None]
     if len(input_images) == 0:
         input_images = None
-    
+
     if randomize_seed:
         seed = random.randint(0, 10000000)
 
@@ -32,7 +32,7 @@ def generate_image(text, img1, img2, img3, height, width, guidance_scale, img_gu
         guidance_scale=guidance_scale,
         img_guidance_scale=img_guidance_scale,
         num_inference_steps=inference_steps,
-        separate_cfg_infer=separate_cfg_infer, 
+        separate_cfg_infer=separate_cfg_infer,
         use_kv_cache=True,
         offload_kv_cache=True,
         offload_model=offload_model,
@@ -41,7 +41,7 @@ def generate_image(text, img1, img2, img3, height, width, guidance_scale, img_gu
         max_input_image_size=max_input_image_size,
     )
     img = output[0]
-    
+
     if save_images:
         # Save All Generated Images
         from datetime import datetime
@@ -52,266 +52,126 @@ def generate_image(text, img1, img2, img3, height, width, guidance_scale, img_gu
         output_path = os.path.join('outputs', f'{timestamp}.png')
         # Save the image
         img.save(output_path)
-    
+
     return img
 
-def get_example():
-    case = [
-        [
-            "A curly-haired man in a red shirt is drinking tea.",
-            None,
-            None,
-            None,
-            1024,
-            1024,
-            2.5,
-            1.6,
-            0,
-            1024,
-            False,
-            False,
-        ],
-        [
-            "The woman in <img><|image_1|></img> waves her hand happily in the crowd",
-            "./imgs/test_cases/zhang.png",
-            None,
-            None,
-            1024,
-            1024,
-            2.5,
-            1.9,
-            128,
-            1024,
-            False,
-            False,
-        ],
-        [
-            "A man in a black shirt is reading a book. The man is the right man in <img><|image_1|></img>.",
-            "./imgs/test_cases/two_man.jpg",
-            None,
-            None,
-            1024,
-            1024,
-            2.5,
-            1.6,
-            0,
-            1024,
-            False,
-            False,
-        ],
-        [
-            "Two woman are raising fried chicken legs in a bar. A woman is <img><|image_1|></img>. Another woman is <img><|image_2|></img>.",
-            "./imgs/test_cases/mckenna.jpg",
-            "./imgs/test_cases/Amanda.jpg",
-            None,
-            1024,
-            1024,
-            2.5,
-            1.8,
-            65,
-            1024,
-            False,
-            False,
-        ],
-        [
-            "A man and a short-haired woman with a wrinkled face are standing in front of a bookshelf in a library. The man is the man in the middle of <img><|image_1|></img>, and the woman is oldest woman in <img><|image_2|></img>",
-            "./imgs/test_cases/1.jpg",
-            "./imgs/test_cases/2.jpg",
-            None,
-            1024,
-            1024,
-            2.5,
-            1.6,
-            60,
-            1024,
-            False,
-            False,
-        ],
-        [
-            "A man and a woman are sitting at a classroom desk. The man is the man with yellow hair in <img><|image_1|></img>. The woman is the woman on the left of <img><|image_2|></img>",
-            "./imgs/test_cases/3.jpg",
-            "./imgs/test_cases/4.jpg",
-            None,
-            1024,
-            1024,
-            2.5,
-            1.8,
-            66,
-            1024,
-            False,
-            False,
-        ],
-        [
-            "The flower <img><|image_1|></img> is placed in the vase which is in the middle of <img><|image_2|></img> on a wooden table of a living room",
-            "./imgs/test_cases/rose.jpg",
-            "./imgs/test_cases/vase.jpg",
-            None,
-            1024,
-            1024,
-            2.5,
-            1.6,
-            66,
-            1024,
-            False,
-            False,
-        ],
-        [
-            "<img><|image_1|><img>\n Remove the woman's earrings. Replace the mug with a clear glass filled with sparkling iced cola.",
-            "./imgs/demo_cases/t2i_woman_with_book.png",
-            None,
-            None,
-            None,
-            None,
-            2.5,
-            1.6,
-            222,
-            1024,
-            False,
-            True,
-        ],
-        [
-            "Detect the skeleton of human in this image: <img><|image_1|></img>.",
-            "./imgs/test_cases/control.jpg",
-            None,
-            None,
-            1024,
-            1024,
-            2.0,
-            1.6,
-            0,
-            1024,
-            False,
-            True,
-        ],
-        [
-            "Generate a new photo using the following picture and text as conditions: <img><|image_1|><img>\n A young boy is sitting on a sofa in the library, holding a book. His hair is neatly combed, and a faint smile plays on his lips, with a few freckles scattered across his cheeks. The library is quiet, with rows of shelves filled with books stretching out behind him.",
-            "./imgs/demo_cases/skeletal.png",
-            None,
-            None,
-            1024,
-            1024,
-            2,
-            1.6,
-            999,
-            1024,
-            False,
-            True,
-        ],
-        [
-            "Following the pose of this image <img><|image_1|><img>, generate a new photo: A young boy is sitting on a sofa in the library, holding a book. His hair is neatly combed, and a faint smile plays on his lips, with a few freckles scattered across his cheeks. The library is quiet, with rows of shelves filled with books stretching out behind him.",
-            "./imgs/demo_cases/edit.png",
-            None,
-            None,
-            1024,
-            1024,
-            2.0,
-            1.6,
-            123,
-            1024,
-            False,
-            True,
-        ],
-        [
-            "Following the depth mapping of this image <img><|image_1|><img>, generate a new photo: A young girl is sitting on a sofa in the library, holding a book. His hair is neatly combed, and a faint smile plays on his lips, with a few freckles scattered across his cheeks. The library is quiet, with rows of shelves filled with books stretching out behind him.",
-            "./imgs/demo_cases/edit.png",
-            None,
-            None,
-            1024,
-            1024,
-            2.0,
-            1.6,
-            1,
-            1024,
-            False,
-            True,
-        ],
-        [
-            "<img><|image_1|><\/img> What item can be used to see the current time? Please highlight it in blue.",
-            "./imgs/test_cases/watch.jpg",
-            None,
-            None,
-            1024,
-            1024,
-            2.5,
-            1.6,
-            666,
-            1024,
-            False,
-            True,
-        ],
-        [
-            "According to the following examples, generate an output for the input.\nInput: <img><|image_1|></img>\nOutput: <img><|image_2|></img>\n\nInput: <img><|image_3|></img>\nOutput: ",
-            "./imgs/test_cases/icl1.jpg",
-            "./imgs/test_cases/icl2.jpg",
-            "./imgs/test_cases/icl3.jpg",
-            224,
-            224,
-            2.5,
-            1.6,
-            1,
-            768,
-            False,
-            False,
-        ],
-    ]
-    return case
 
-def run_for_examples(text, img1, img2, img3, height, width, guidance_scale, img_guidance_scale, seed, max_input_image_size, randomize_seed, use_input_image_size_as_output, save_images):    
-    # 在函数内部设置默认值
-    inference_steps = 50
-    separate_cfg_infer = True
-    offload_model = False
-    
-    return generate_image(
-        text, img1, img2, img3, height, width, guidance_scale, img_guidance_scale, 
-        inference_steps, seed, separate_cfg_infer, offload_model,
-        use_input_image_size_as_output, max_input_image_size, randomize_seed, save_images
-    )
+def create_image_grid(images, values, param_name):
+    # Calculate spacing and borders
+    border_size = 1
+    spacing = 5
+    caption_height = 60  # Increased for larger font
 
-description = """
-OmniGen is a unified image generation model that you can use to perform various tasks, including, but not limited to, text-to-image generation, subject-driven generation, Identity-Preserving Generation, and image-conditioned generation.
-For multi-modal to image generation, you should pass a string as `prompt`, and a list of image paths as `input_images`. The placeholder in the prompt should be in the format of `<img><|image_*|></img>` (for the first image, the placeholder is <img><|image_1|></img>. for the second image, the placeholder is <img><|image_2|></img>).
-For example, use an image of a woman to generate a new image:
-prompt = "A woman holds a bouquet of flowers and faces the camera. The woman is \<img\>\<|image_1|\>\</img\>."
+    # Calculate total dimensions including spacing and borders
+    width = sum(img.size[0] + 2*border_size for img in images) + spacing * (len(images) - 1)
+    height = max(img.size[1] for img in images) + 2*border_size + caption_height
 
-Tips:
-- For image editing task and controlnet task, we recommend setting the height and width of output image as the same as input image. For example, if you want to edit a 512x512 image, you should set the height and width of output image as 512x512. You also can set the `use_input_image_size_as_output` to automatically set the height and width of output image as the same as input image.
-- For out-of-memory or time cost, you can set `offload_model=True` or refer to [./docs/inference.md#requiremented-resources](https://github.com/VectorSpaceLab/OmniGen/blob/main/docs/inference.md#requiremented-resources) to select a appropriate setting.
-- If inference time is too long when inputting multiple images, please try to reduce the `max_input_image_size`. For more details please refer to [./docs/inference.md#requiremented-resources](https://github.com/VectorSpaceLab/OmniGen/blob/main/docs/inference.md#requiremented-resources).
-- Oversaturated: If the image appears oversaturated, please reduce the `guidance_scale`.
-- Not matching the prompt: If the image does not match the prompt, please try to increase the `guidance_scale`.
-- Low-quality: A more detailed prompt will lead to better results. 
-- Animated Style: If you want the generated image to appear less animated, and more realistic, you can try adding `photo` to the prompt.
-- Editing generated images: If you generate an image with OmniGen, and then want to edit it, you cannot use the same seed to edit this image. For example, use seed=0 to generate the image, and then use seed=1 to edit this image.
-- Image editing: In your prompt, we recommend placing the image before the editing instructions. For example, use `<img><|image_1|></img> remove suit`, rather than `remove suit <img><|image_1|></img>`.
+    # Create a new image with black background
+    grid = Image.new('RGB', (width, height), color='black')
 
-HF Spaces often encounter errors due to quota limitations, so recommend to run it locally.
+    # Paste images
+    x_offset = 0
+    for img, value in zip(images, values):
+        # Create white border by making a slightly larger white background
+        bordered_size = (img.size[0] + 2*border_size, img.size[1] + 2*border_size)
+        bordered_bg = Image.new('RGB', bordered_size, color='white')
 
-"""
+        # Paste original image onto white background with 1px offset
+        bordered_bg.paste(img, (border_size, border_size))
 
-article = """
----
-**Citation** 
-<br> 
-If you find this repository useful, please consider giving a star ⭐ and a citation
-```
-@article{xiao2024omnigen,
-  title={Omnigen: Unified image generation},
-  author={Xiao, Shitao and Wang, Yueze and Zhou, Junjie and Yuan, Huaying and Xing, Xingrun and Yan, Ruiran and Wang, Shuting and Huang, Tiejun and Liu, Zheng},
-  journal={arXiv preprint arXiv:2409.11340},
-  year={2024}
-}
-```
-**Contact**
-<br>
-If you have any questions, please feel free to open an issue or directly reach us out via email.
-"""
+        # Paste bordered image onto main grid
+        grid.paste(bordered_bg, (x_offset, 0))
 
+        # Add text caption
+        from PIL import ImageDraw, ImageFont
+        draw = ImageDraw.Draw(grid)
+        try:
+            font = ImageFont.truetype("arial.ttf", 40)
+        except:
+            font = ImageFont.load_default()
 
-# Gradio 
+        # Draw parameter value centered under each image in white
+        text = f"{param_name}={value}"
+        text_bbox = draw.textbbox((0, 0), text, font=font)
+        text_width = text_bbox[2] - text_bbox[0]
+        text_x = x_offset + (bordered_size[0] - text_width) // 2
+        draw.text((text_x, img.size[1] + 2*border_size + 10), text, fill='white', font=font)
+
+        x_offset += bordered_size[0] + spacing
+
+    return grid
+
+def generate_image_grid(text, img1, img2, img3, height, width, guidance_scale, img_guidance_scale,
+                       inference_steps, seed, separate_cfg_infer, offload_model,
+                       use_input_image_size_as_output, max_input_image_size, randomize_seed, save_images,
+                       param_to_iterate, param_values):
+
+    if not param_values.strip():
+        # If no parameter values provided, just generate one image normally
+        return generate_image(text, img1, img2, img3, height, width, guidance_scale, img_guidance_scale,
+                            inference_steps, seed, separate_cfg_infer, offload_model,
+                            use_input_image_size_as_output, max_input_image_size, randomize_seed, save_images)
+
+    # Parse parameter values
+    try:
+        if param_to_iterate == 'prompt_part':
+            values = [v.strip() for v in param_values.split(',')]
+        else:
+            values = [float(v.strip()) for v in param_values.split(',')]
+    except ValueError:
+        return None, "Error: Parameter values must be comma-separated numbers (or text for prompt_part)"
+
+    # Generate an image for each parameter value
+    images = []
+    for value in values:
+        # Create parameters dict with the current iteration value
+        params = {
+            'prompt': text,
+            'input_images': [img for img in [img1, img2, img3] if img is not None],
+            'height': height,
+            'width': width,
+            'guidance_scale': guidance_scale,
+            'img_guidance_scale': img_guidance_scale,
+            'num_inference_steps': inference_steps,
+            'seed': seed if not randomize_seed else random.randint(0, 10000000),
+            'separate_cfg_infer': separate_cfg_infer,
+            'offload_model': offload_model,
+            'use_input_image_size_as_output': use_input_image_size_as_output,
+            'max_input_image_size': max_input_image_size,
+        }
+
+        # Update the parameter being iterated
+        if param_to_iterate == 'inference_steps':
+            params['num_inference_steps'] = int(value)
+        elif param_to_iterate == 'seed':
+            params['seed'] = int(value)
+        elif param_to_iterate == 'prompt_part':
+            params['prompt'] = text.replace(values[0], value)
+        else:
+            params[param_to_iterate] = value
+
+        # Generate image with current parameters
+        img = pipe(**params)[0]
+        images.append(img)
+
+        if save_images:
+            os.makedirs('outputs', exist_ok=True)
+            timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
+            output_path = os.path.join('outputs', f'{timestamp}_{param_to_iterate}_{value}.png')
+            img.save(output_path)
+
+    grid = create_image_grid(images, values, param_to_iterate)
+
+    if save_images:
+        timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
+        grid_path = os.path.join('outputs', f'{timestamp}_grid_{param_to_iterate}.png')
+        grid.save(grid_path)
+
+    return grid
+
+# Gradio
 with gr.Blocks() as demo:
     gr.Markdown("# OmniGen: Unified Image Generation [paper](https://arxiv.org/abs/2409.11340) [code](https://github.com/VectorSpaceLab/OmniGen)")
-    gr.Markdown(description)
     with gr.Row():
         with gr.Column():
             # text prompt
@@ -327,10 +187,10 @@ with gr.Blocks() as demo:
 
             # slider
             height_input = gr.Slider(
-                label="Height", minimum=128, maximum=2048, value=1024, step=16
+                label="Height", minimum=128, maximum=2048, value=768, step=16
             )
             width_input = gr.Slider(
-                label="Width", minimum=128, maximum=2048, value=1024, step=16
+                label="Width", minimum=128, maximum=2048, value=576, step=16
             )
 
             guidance_scale_input = gr.Slider(
@@ -348,7 +208,7 @@ with gr.Blocks() as demo:
             seed_input = gr.Slider(
                 label="Seed", minimum=0, maximum=2147483647, value=42, step=1
             )
-            randomize_seed = gr.Checkbox(label="Randomize seed", value=True)
+            randomize_seed = gr.Checkbox(label="Randomize seed", value=False)
 
             max_input_image_size = gr.Slider(
                 label="max_input_image_size", minimum=128, maximum=2048, value=1024, step=16
@@ -364,19 +224,30 @@ with gr.Blocks() as demo:
                 label="use_input_image_size_as_output", info="Automatically adjust the output image size to be same as input image size. For editing and controlnet task, it can make sure the output image has the same size as input image leading to better performance", value=False,
             )
 
-            # generate
-            generate_button = gr.Button("Generate Image")
-            
 
         with gr.Column():
+            # generate
+            generate_button = gr.Button("Generate Image")
+
             with gr.Column():
                 # output image
                 output_image = gr.Image(label="Output Image")
-                save_images = gr.Checkbox(label="Save generated images", value=False)
+                save_images = gr.Checkbox(label="Save generated images", value=True)
+            # Add parameter iteration controls
+            param_to_iterate = gr.Dropdown(
+                choices=['inference_steps', 'guidance_scale', 'img_guidance_scale', 'seed', 'prompt_part'],
+                label="Parameter to iterate (optional)",
+                value=None
+            )
+            param_values = gr.Textbox(
+                label="Parameter values (comma-separated)",
+                placeholder="e.g., 20,40,60 for steps",
+                value=""
+            )
 
     # click
     generate_button.click(
-        generate_image,
+        generate_image_grid,  # Changed from generate_image to generate_image_grid
         inputs=[
             prompt_input,
             image_input_1,
@@ -394,33 +265,11 @@ with gr.Blocks() as demo:
             max_input_image_size,
             randomize_seed,
             save_images,
+            param_to_iterate,  # New input
+            param_values,      # New input
         ],
         outputs=output_image,
     )
-
-    gr.Examples(
-        examples=get_example(),
-        fn=run_for_examples,
-        inputs=[
-            prompt_input,
-            image_input_1,
-            image_input_2,
-            image_input_3,
-            height_input,
-            width_input,
-            guidance_scale_input,
-            img_guidance_scale_input,
-            seed_input,
-            max_input_image_size,
-            randomize_seed,
-            use_input_image_size_as_output,
-        ],
-        outputs=output_image,
-    )
-
-    gr.Markdown(article)
-
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run the OmniGen')
