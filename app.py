@@ -4,6 +4,7 @@ import os
 import argparse
 import random
 import spaces
+import json
 from datetime import datetime
 from OmniGen import OmniGenPipeline
 from PIL import ImageDraw, ImageFont
@@ -154,6 +155,9 @@ def generate_image_grid(text, img1, img2, img3, height, width, guidance_scale, i
             params['prompt'] = text.replace(values[0], value)
         else:
             params[param_to_iterate] = value
+
+        # Print generation params
+        print(json.dumps({"generation_params": params}, indent=2, default=str))
 
         # Generate image with current parameters
         img = pipe(**params)[0]
