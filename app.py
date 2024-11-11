@@ -14,6 +14,16 @@ pipe = OmniGenPipeline.from_pretrained(
     "Shitao/OmniGen-v1"
 )
 
+def debug_log(message, obj=None):
+    """Log debug messages if debug flag is set"""
+    if not hasattr(debug_log, 'debug_enabled'):
+        return
+
+    if obj is not None:
+        print(json.dumps({message: obj}, indent=2, default=str))
+    else:
+        print(json.dumps({"debug": message}, indent=2))
+
 @spaces.GPU(duration=180)
 def generate_image(text, img1, img2, img3, height, width, guidance_scale, img_guidance_scale, inference_steps, seed, separate_cfg_infer, offload_model,
             use_input_image_size_as_output, max_input_image_size, randomize_seed, save_images):
@@ -56,6 +66,13 @@ def generate_image(text, img1, img2, img3, height, width, guidance_scale, img_gu
 
 
 def create_image_grid(grid_cells):
+    debug_log("Starting create_image_grid")
+    debug_log("Grid structure", {
+        'rows': len(grid_cells),
+        'cols': len(grid_cells[0]),
+        'sample_image_size': grid_cells[0][0]['image'].size
+    })
+
     # Calculate spacing and borders
     border_size = 1
     spacing = 5
@@ -123,6 +140,10 @@ def create_image_grid(grid_cells):
                 text_y = pos_y + image_height + 2*border_size + i*25  # 25 pixels between lines
                 draw.text((text_x, text_y), line, fill='white', font=font)
 
+    debug_log("Created grid", {
+        'size': grid.size,
+        'mode': grid.mode
+    })
     return grid
 
 def apply_parameter_value(params, param_name, value, all_values=None):
@@ -151,6 +172,13 @@ def generate_image_grid(text, img1, img2, img3, height, width, guidance_scale, i
                        inference_steps, seed, separate_cfg_infer, offload_model,
                        use_input_image_size_as_output, max_input_image_size, randomize_seed, save_images,
                        x_param, x_values, y_param, y_values):
+    debug_log("Starting generate_image_grid")
+    debug_log("Input parameters", {
+        'x_param': x_param,
+        'x_values': x_values,
+        'y_param': y_param,
+        'y_values': y_values
+    })
 
     if not x_values.strip() and not y_values.strip():
         return generate_image(text, img1, img2, img3, height, width, guidance_scale, img_guidance_scale,
@@ -220,6 +248,17 @@ def generate_image_grid(text, img1, img2, img3, height, width, guidance_scale, i
         grid.save(output_path)
         saved_path = output_path
 
+    debug_log("Grid created, type", type(grid))
+    debug_log("Grid size", grid.size)
+    debug_log("Grid mode", grid.mode)
+
+    if save_images:
+        debug_log("Saving grid to", output_path)
+
+    debug_log("Returning grid and path", {
+        'grid_type': type(grid),
+        'saved_path': saved_path
+    })
     return grid, saved_path
 
 # Gradio
@@ -357,7 +396,12 @@ with gr.Blocks() as demo:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run the OmniGen')
     parser.add_argument('--share', action='store_true', help='Share the Gradio app')
+    parser.add_argument('--debug', action='store_true', help='Enable debug logging')
     args = parser.parse_args()
+
+    if args.debug:
+        debug_log.debug_enabled = True
+        debug_log("Debug mode enabled")
 
     # launch
     demo.launch(share=args.share)
