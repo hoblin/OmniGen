@@ -46,7 +46,7 @@ def generate_image(text, img1, img2, img3, height, width, guidance_scale, img_gu
         num_inference_steps=inference_steps,
         separate_cfg_infer=separate_cfg_infer,
         use_kv_cache=True,
-        offload_kv_cache=True,
+        offload_kv_cache=False,
         offload_model=offload_model,
         use_input_image_size_as_output=use_input_image_size_as_output,
         seed=seed,
@@ -307,7 +307,9 @@ with gr.Blocks() as demo:
             )
 
             separate_cfg_infer = gr.Checkbox(
-                label="separate_cfg_infer", info="Whether to use separate inference process for different guidance. This will reduce the memory cost.", value=True,
+                label="separate_cfg_infer",
+                info="Whether to use separate inference process for different guidance. This will reduce the memory cost but slow down generation.",
+                value=False,
             )
             offload_model = gr.Checkbox(
                 label="offload_model", info="Offload model to CPU, which will significantly reduce the memory cost but slow down the generation speed. You can cancel separate_cfg_infer and set offload_model=True. If both separate_cfg_infer and offload_model are True, further reduce the memory, but slowest generation", value=False,
