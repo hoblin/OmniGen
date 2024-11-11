@@ -125,7 +125,7 @@ def create_image_grid(grid_cells):
 
     return grid
 
-def apply_parameter_value(params, param_name, value):
+def apply_parameter_value(params, param_name, value, all_values=None):
     """Updates params dict based on parameter name and value and returns the converted value"""
     converted_value = value  # default case
 
@@ -136,7 +136,9 @@ def apply_parameter_value(params, param_name, value):
         converted_value = int(value)
         params['seed'] = converted_value
     elif param_name == 'prompt_part':
-        params['prompt'] = params['prompt'].replace(..., value)
+        if all_values:  # if we have all values, use first as original
+            params['prompt'] = params['prompt'].replace(all_values[0], value)
+        converted_value = value
     elif param_name in ['guidance_scale', 'img_guidance_scale']:
         converted_value = float(value)
         params[param_name] = converted_value
@@ -181,9 +183,9 @@ def generate_image_grid(text, img1, img2, img3, height, width, guidance_scale, i
 
             # Apply X and Y parameters if they exist
             if x_param:
-                params, x_converted = apply_parameter_value(params, x_param, x_val)
+                params, x_converted = apply_parameter_value(params, x_param, x_val, x_vals)
             if y_param:
-                params, y_converted = apply_parameter_value(params, y_param, y_val)
+                params, y_converted = apply_parameter_value(params, y_param, y_val, y_vals)
 
             # Print generation params
             print(json.dumps({"generation_params": params}, indent=2, default=str))
