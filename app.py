@@ -78,6 +78,11 @@ def create_image_grid(grid_cells):
     spacing = 5
     line_height = 25  # Height per line of text
 
+    # Define colors
+    border_color = '#ffb454'
+    background_color = '#15232d'
+    text_color = '#ffb454'
+
     # Calculate caption height based on whether we have one or two parameters
     sample_cell = grid_cells[0][0]
     num_caption_lines = sum(1 for x in [sample_cell['x'], sample_cell['y']] if x is not None)
@@ -104,8 +109,8 @@ def create_image_grid(grid_cells):
     total_width = len(grid_cells[0]) * cell_width + (len(grid_cells[0]) - 1) * spacing
     total_height = len(grid_cells) * cell_height + (len(grid_cells) - 1) * spacing
 
-    # Create a new image with black background
-    grid = Image.new('RGB', (total_width, total_height), color='black')
+    # Create a new image with background color
+    grid = Image.new('RGB', (total_width, total_height), color=background_color)
 
     # Paste images with captions
     for y, row in enumerate(grid_cells):
@@ -114,9 +119,9 @@ def create_image_grid(grid_cells):
             pos_x = x * (cell_width + spacing)
             pos_y = y * (cell_height + spacing)
 
-            # Create white border only around the image (not caption area)
+            # Create border only around the image (not caption area)
             bordered_size = (image_width + 2*border_size, image_height + 2*border_size)
-            bordered_bg = Image.new('RGB', bordered_size, color='white')
+            bordered_bg = Image.new('RGB', bordered_size, color=border_color)
             bordered_bg.paste(cell['image'], (border_size, border_size))
 
             # Paste bordered image onto main grid
@@ -138,7 +143,7 @@ def create_image_grid(grid_cells):
                 text_width = text_bbox[2] - text_bbox[0]
                 text_x = pos_x + (cell_width - text_width) // 2
                 text_y = pos_y + image_height + 2*border_size + i*25  # 25 pixels between lines
-                draw.text((text_x, text_y), line, fill='white', font=font)
+                draw.text((text_x, text_y), line, fill=text_color, font=font)
 
     debug_log("Created grid", {
         'size': grid.size,
