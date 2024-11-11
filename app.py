@@ -212,6 +212,8 @@ def generate_image_grid(text, img1, img2, img3, height, width, guidance_scale, i
                 'offload_model': offload_model,
                 'use_input_image_size_as_output': use_input_image_size_as_output,
                 'max_input_image_size': max_input_image_size,
+                'use_kv_cache': True,
+                'offload_kv_cache': False
             }
 
             # Apply X and Y parameters if they exist
