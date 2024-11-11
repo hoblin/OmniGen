@@ -78,9 +78,11 @@ def create_image_grid(grid_cells):
             print(f"Error loading font: {e}, falling back to default")
             font = ImageFont.load_default()
 
-    # Calculate total dimensions including spacing and borders
-    cell_width = grid_cells[0][0]['image'].size[0] + 2*border_size
-    cell_height = grid_cells[0][0]['image'].size[1] + 2*border_size + caption_height
+    # Calculate dimensions
+    image_width = grid_cells[0][0]['image'].size[0]
+    image_height = grid_cells[0][0]['image'].size[1]
+    cell_width = image_width + 2*border_size
+    cell_height = image_height + 2*border_size + caption_height
 
     total_width = len(grid_cells[0]) * cell_width + (len(grid_cells[0]) - 1) * spacing
     total_height = len(grid_cells) * cell_height + (len(grid_cells) - 1) * spacing
@@ -95,11 +97,9 @@ def create_image_grid(grid_cells):
             pos_x = x * (cell_width + spacing)
             pos_y = y * (cell_height + spacing)
 
-            # Create white border by making a slightly larger white background
-            bordered_size = (cell_width, cell_height)
+            # Create white border only around the image (not caption area)
+            bordered_size = (image_width + 2*border_size, image_height + 2*border_size)
             bordered_bg = Image.new('RGB', bordered_size, color='white')
-
-            # Paste original image onto white background with border offset
             bordered_bg.paste(cell['image'], (border_size, border_size))
 
             # Paste bordered image onto main grid
@@ -120,7 +120,7 @@ def create_image_grid(grid_cells):
                 text_bbox = draw.textbbox((0, 0), line, font=font)
                 text_width = text_bbox[2] - text_bbox[0]
                 text_x = pos_x + (cell_width - text_width) // 2
-                text_y = pos_y + cell['image'].size[1] + 2*border_size + i*25  # 25 pixels between lines
+                text_y = pos_y + image_height + 2*border_size + i*25  # 25 pixels between lines
                 draw.text((text_x, text_y), line, fill='white', font=font)
 
     return grid
