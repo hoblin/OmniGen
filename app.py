@@ -194,6 +194,12 @@ def generate_image_grid(text, img1, img2, img3, height, width, guidance_scale, i
     x_vals = [v.strip() for v in x_values.split(',')] if x_values.strip() else [""]
     y_vals = [v.strip() for v in y_values.split(',')] if y_values.strip() else [""]
 
+    # Use the same input image handling as the fast version
+    input_images = [img1, img2, img3]
+    input_images = [img for img in input_images if img is not None]
+    if len(input_images) == 0:
+        input_images = None
+
     # Generate images for all combinations
     grid_cells = []
     for y_val in y_vals:
@@ -201,7 +207,7 @@ def generate_image_grid(text, img1, img2, img3, height, width, guidance_scale, i
         for x_val in x_vals:
             params = {
                 'prompt': text,
-                'input_images': [img for img in [img1, img2, img3] if img is not None],
+                'input_images': input_images,
                 'height': height,
                 'width': width,
                 'guidance_scale': guidance_scale,
